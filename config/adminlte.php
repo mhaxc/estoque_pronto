@@ -335,7 +335,7 @@ return [
     ],
     [
         'text' => 'Relatórios',
-        'url'  => '/relatorios/produtos',
+        'url'  => '/relatorios',
         'icon' => 'fas fa-fw fa-chart-bar',
        
     ],

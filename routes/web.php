@@ -13,7 +13,7 @@ use App\Http\Controllers\SaidaController;
 use App\Http\Controllers\RelatorioController;
 
 
-Route::get('/dashboard', [DashboardController::class, 'index'])
+Route::get('/', [DashboardController::class, 'index'])
     ->middleware('auth')
     ->name('dashboard');
 
@@ -23,8 +23,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
-    Route::get('/', function () {
-    return view('dashboard');
+  
 });
   
     Route::resource('categorias', CategoriaController::class);
@@ -37,10 +36,19 @@ Route::middleware('auth')->group(function () {
     Route::resource('transferencias', transferenciaController::class);
     
   
-     Route::get('/relatorios/produtos', [RelatorioController::class, 'produtos'])->name('relatorios.produtos');
-    Route::get('/relatorios/produtos/pdf', [RelatorioController::class, 'exportarPDF'])->name('relatorios.produtos.pdf');
-    Route::get('/relatorios/produtos/excel', [RelatorioController::class, 'exportarExcel'])->name('relatorios.produtos.excel');
-   
+    
+    Route::prefix('relatorios')->group(function () {
+
+    Route::get('/', [RelatorioController::class, 'index'])->name('relatorios.index');
+
+    Route::get('/produtos-mais-saidos', [RelatorioController::class, 'produtosMaisSaidos'])->name('relatorios.produtos-mais-saidos');
+
+    Route::get('/movimentacoes', [RelatorioController::class, 'movimentacoes'])->name('relatorios.movimentacoes');
+
+    Route::get('/export/pdf', [RelatorioController::class, 'exportPDF'])->name('relatorios.export.pdf');
+
+    Route::get('/export/excel', [RelatorioController::class, 'exportExcel'])->name('relatorios.export.excel');
+
 });
 
 require __DIR__.'/auth.php';

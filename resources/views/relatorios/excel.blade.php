@@ -1,23 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Relatório</title>
-    <style>
-        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; }
-        h2 { text-align: center; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        th, td { border: 1px solid #000; padding: 6px; }
-        th { background: #ccc; }
-    </style>
-</head>
-<body>
-
-<h2>Relatório de Movimentações</h2>
-
-<h3>Entradas</h3>
 <table>
     <thead>
+        <tr>
+            <th colspan="4">Entradas</th>
+        </tr>
         <tr>
             <th>Produto</th>
             <th>Quantidade</th>
@@ -26,20 +11,20 @@
         </tr>
     </thead>
     <tbody>
-        @foreach($entradas as $e)
+    @foreach($entradas as $e)
         <tr>
             <td>{{ $e->produto->nome }}</td>
             <td>{{ $e->quantidade }}</td>
             <td>{{ $e->funcionario->nome }}</td>
             <td>{{ $e->created_at }}</td>
         </tr>
-        @endforeach
+    @endforeach
     </tbody>
-</table>
 
-<h3>Saídas</h3>
-<table>
     <thead>
+        <tr>
+            <th colspan="4">Saídas</th>
+        </tr>
         <tr>
             <th>Produto</th>
             <th>Quantidade</th>
@@ -48,20 +33,20 @@
         </tr>
     </thead>
     <tbody>
-        @foreach($saidas as $s)
+    @foreach($saidas as $s)
         <tr>
             <td>{{ $s->produto->nome }}</td>
             <td>{{ $s->quantidade }}</td>
             <td>{{ $s->funcionario->nome }}</td>
             <td>{{ $s->created_at }}</td>
         </tr>
-        @endforeach
+    @endforeach
     </tbody>
-</table>
 
-<h3>Transferências</h3>
-<table>
     <thead>
+        <tr>
+            <th colspan="4">Transferências</th>
+        </tr>
         <tr>
             <th>Produto</th>
             <th>Quantidade</th>
@@ -70,16 +55,15 @@
         </tr>
     </thead>
     <tbody>
-        @foreach($transferencias as $t)
+    @foreach($transferencias as $t)
         <tr>
             <td>{{ $t->produto->nome }}</td>
             <td>{{ $t->quantidade }}</td>
             <td>{{ $t->funcionario->nome }}</td>
             <td>{{ $t->created_at }}</td>
         </tr>
-        @endforeach
+    @endforeach
     </tbody>
 </table>
 
-</body>
-</html>
+

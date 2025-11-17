@@ -2,67 +2,104 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Produto;
-use PDF;
+use App\Models\Entrada;
+use App\Models\Saida;
+use App\Models\Transferencia;
+use App\Models\Funcionario;
+use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\ProdutosExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class RelatorioController extends Controller
 {
-    public function produtos(Request $request)
+    public function index()
     {
-        $query = Produto::query();
-
-        // Filtros dinâmicos
-        if ($request->filled('data_inicial') && $request->filled('data_final')) {
-            $query->whereBetween('data', [$request->data_inicial, $request->data_final]);
-        }
-
-        if ($request->filled('nome')) {
-            $query->where('nome', 'like', '%' . $request->nome . '%');
-        }
-
-        if ($request->filled('categoria')) {
-            $query->where('categoria', 'like', '%' . $request->categoria . '%');
-        }
-
-        $produtos = $query->orderBy('data', 'desc')->get();
-
-        return view('relatorios.produtos', compact('produtos'));
+        return view('relatorios.index');
     }
 
-    public function exportarPDF(Request $request)
+    // Produtos mais saídos no mês
+    public function produtosMaisSaidos(Request $request)
     {
-        $query = Produto::query();
+        $mes = $request->mes ?? now()->format('m');
+        $ano = $request->ano ?? now()->format('Y');
 
-        if ($request->filled('data_inicial') && $request->filled('data_final')) {
-            $query->whereBetween('data', [$request->data_inicial, $request->data_final]);
-        }
+        $produtos = Saida::selectRaw('produto_id, SUM(quantidade) as total')
+            ->whereMonth('created_at', $mes)
+            ->whereYear('created_at', $ano)
+            ->groupBy('produto_id')
+            ->orderByDesc('total')
+            ->with('produto')
+            ->get();
 
-        if ($request->filled('nome')) {
-            $query->where('nome', 'like', '%' . $request->nome . '%');
-        }
-
-        if ($request->filled('categoria')) {
-            $query->where('categoria', 'like', '%' . $request->categoria . '%');
-        }
-
-        $produtos = $query->orderBy('data', 'desc')->get();
-
-        $pdf = PDF::loadView('relatorios.produtos_pdf', compact('produtos'))
-                  ->setPaper('a4', 'portrait');
-
-        return $pdf->download('relatorio_produtos.pdf');
+        return view('relatorios.produtos-mais-saidos', compact('produtos', 'mes', 'ano'));
     }
 
-    public function exportarExcel(Request $request)
+    // Movimentações por funcionário + data
+    public function movimentacoes(Request $request)
     {
-        return Excel::download(new ProdutosExport(
-            $request->data_inicial,
-            $request->data_final,
-            $request->nome,
-            $request->categoria
-        ), 'relatorio_produtos.xlsx');
+        $funcionario = $request->funcionario_id;
+        $inicio = $request->inicio;
+        $fim = $request->fim;
+
+        $entradas = Entrada::with('produto', 'funcionario')
+            ->when($funcionario, fn($q) => $q->where('funcionario_id', $funcionario))
+            ->when($inicio && $fim, fn($q) => $q->whereBetween('created_at', [$inicio, $fim]))
+            ->get();
+
+        $saidas = Saida::with('produto', 'funcionario')
+            ->when($funcionario, fn($q) => $q->where('funcionario_id', $funcionario))
+            ->when($inicio && $fim, fn($q) => $q->whereBetween('created_at', [$inicio, $fim]))
+            ->get();
+
+        $transferencias = Transferencia::with('produto', 'funcionario')
+            ->when($funcionario, fn($q) => $q->where('funcionario_id', $funcionario))
+            ->when($inicio && $fim, fn($q) => $q->whereBetween('created_at', [$inicio, $fim]))
+            ->get();
+
+        $funcionarios = Funcionario::all();
+
+        return view('relatorios.movimentacoes', compact(
+            'entradas', 'saidas', 'transferencias', 'funcionarios'
+        ));
+    }
+
+    public function exportPDF(Request $request)
+    {
+        $dados = $this->gerarDados($request);
+        $pdf = Pdf::loadView('relatorios.pdf', $dados);
+        return $pdf->download('relatorio.pdf');
+    }
+
+    public function exportExcel(Request $request)
+    {
+        return Excel::download(new \App\Exports\RelatorioExport($request), 'relatorio.xlsx');
+    }
+
+    
+    
+    
+    Private function gerarDados(Request $request)
+    {
+    $funcionario = $request->funcionario_id;
+    $inicio = $request->inicio;
+    $fim = $request->fim;
+
+    return [
+        'entradas' => Entrada::when($funcionario, fn($q) => $q->where('funcionario_id', $funcionario))
+                            ->when($inicio && $fim, fn($q) => $q->whereBetween('created_at', [$inicio, $fim]))
+                            ->with('produto', 'funcionario')
+                            ->get(),
+
+        'saidas' => Saida::when($funcionario, fn($q) => $q->where('funcionario_id', $funcionario))
+                         ->when($inicio && $fim, fn($q) => $q->whereBetween('created_at', [$inicio, $fim]))
+                         ->with('produto', 'funcionario')
+                         ->get(),
+
+        'transferencias' => Transferencia::when($funcionario, fn($q) => $q->where('funcionario_id', $funcionario))
+                                         ->when($inicio && $fim, fn($q) => $q->whereBetween('created_at', [$inicio, $fim]))
+                                         ->with('produto', 'funcionario')
+                                         ->get(),
+    ];
     }
 }
