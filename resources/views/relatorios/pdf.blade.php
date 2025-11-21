@@ -34,7 +34,7 @@
     <h3>Entradas</h3>
     <table>
         <thead>
-            <tr><th>Produto</th><th>Quantidade</th><th>Funcionário</th><th>Data</th></tr>
+             <tr><th>Produto</th><th>Quantidade</th><th>Funcionário</th><th>Preco</th><th>Data</th></tr>
         </thead>
         <tbody>
         @foreach($entradas as $e)
@@ -42,6 +42,7 @@
                 <td>{{ $e->produto->nome ?? '—' }}</td>
                 <td>{{ $e->quantidade }}</td>
                 <td>{{ $e->funcionario->nome ?? '—' }}</td>
+                <td>R$ {{ number_format($e->produto->preco, 2, ',', '.') }}</td>
                 <td>{{ $e->created_at->format('d/m/Y H:i') }}</td>
             </tr>
         @endforeach
@@ -51,7 +52,7 @@
     <h3>Saídas</h3>
     <table>
         <thead>
-            <tr><th>Produto</th><th>Quantidade</th><th>Funcionário</th><th>Data</th></tr>
+              <tr><th>Produto</th><th>Quantidade</th><th>Funcionário</th><th>Preco</th><th>Data</th></tr>
         </thead>
         <tbody>
         @foreach($saidas as $s)
@@ -59,6 +60,7 @@
                 <td>{{ $s->produto->nome ?? '—' }}</td>
                 <td>{{ $s->quantidade }}</td>
                 <td>{{ $s->funcionario->nome ?? '—' }}</td>
+                <td>R$ {{ number_format($s->produto->preco, 2, ',', '.') }}</td>
                 <td>{{ $s->created_at->format('d/m/Y H:i') }}</td>
             </tr>
         @endforeach
@@ -68,7 +70,7 @@
     <h3>Transferências</h3>
     <table>
         <thead>
-            <tr><th>Produto</th><th>Quantidade</th><th>Funcionário</th><th>Data</th></tr>
+            <tr><th>Produto</th><th>Quantidade</th><th>Funcionário</th><th>Preco</th><th>Data</th></tr>
         </thead>
         <tbody>
         @foreach($transferencias as $t)
@@ -76,6 +78,7 @@
                 <td>{{ $t->produto->nome ?? '—' }}</td>
                 <td>{{ $t->quantidade }}</td>
                 <td>{{ $t->funcionario->nome ?? '—' }}</td>
+                <td>R$ {{ number_format($t->produto->preco, 2, ',', '.') }}</td>
                 <td>{{ $t->created_at->format('d/m/Y H:i') }}</td>
             </tr>
         @endforeach

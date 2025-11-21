@@ -2,121 +2,74 @@
 
 namespace App\Http\Controllers;
 
+
 use App\Models\Saida;
+use App\Models\SaidaItem;
 use App\Models\Produto;
 use App\Models\Funcionario;
 use Illuminate\Http\Request;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
-use Illuminate\View\View;
+
 
 class SaidaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        $saidas = Saida::with(['produto', 'funcionario'])->paginate(10);
-        
-        return view('saidas.index', compact('saidas'));
-    }
+public function index()
+{
+$saidas = Saida::with(['funcionario', 'items.produto'])->paginate(20);
+return view('saidas.index', compact('saidas'));
+}
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        $produtos = Produto::all();
-        $funcionarios = Funcionario::all();
-        
-        return view('saidas.create', compact('produtos', 'funcionarios'));
-    }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-      public function store(Request $request): RedirectResponse
-    {
-         $request->validate(rules: [
-            'produto_id' => 'required|exists:produtos,id',
-            'quantidade' => 'required|integer|min:1',
-            'data_saida' => 'required|date',
-            'observacao' => 'nullable|string',
-            'funcionario_id' => 'required|exists:funcionarios,id',
-            
-        ]);
+public function create()
+{
+$produtos = Produto::all();
+$funcionarios = Funcionario::all();
+return view('saidas.create', compact('produtos','funcionarios'));
+}
 
-        Saida::create($request->all());
-       
-    
 
-        return redirect()->route('saidas.index')
-            ->with('success', 'Saida registrada com sucesso!');
-    }
+public function store(Request $request)
+{
+$request->validate([
+'funcionario_id' => 'required|exists:funcionarios,id',
+'data_saida' => 'required|date',
+'items.*.produto_id' => 'required|exists:produtos,id',
+'items.*.quantidade' => 'required|numeric|min:1',
+]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Saida $saida)
-    {
-        $saida->load(['produto', 'funcionario']);
-        
-        return view('saidas.show', compact('saida'));
-    }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Saida $saida)
-    {
-        $produtos = Produto::all();
-        $funcionarios = Funcionario::all();
-        
-        return view('saidas.edit', compact('saida', 'produtos', 'funcionarios'));
-    }
+// Criar saída principal
+$saida = Saida::create([
+'funcionario_id' => $request->funcionario_id,
+'data_saida' => $request->data_saida,
+'observacao' => $request->observacao,
+]);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Saida $saida)
-    {
-        $validated = $request->validate([
-            'produto_id' => 'required|exists:produtos,id',
-            'quantidade' => 'required|integer|min:1',
-            'data_saida' => 'required|date',
-            'valor' => 'required|numeric|min:0',
-            'observacao' => 'nullable|string|max:500',
-            'funcionario_id' => 'required|exists:funcionarios,id'
-        ]);
 
-        try {
-            DB::transaction(function () use ($saida, $validated) {
-                $saida->update($validated);
-            });
+// Inserir itens vinculados
+foreach ($request->input('produtos', []) as $item) {
+SaidaItem::create([
+'saida_id' => $saida->id,
+'produto_id' => $item['produto_id'],
+'quantidade' => $item['quantidade'],
+]);
+}
 
-            return redirect()->route('saidas.index')
-                ->with('success', 'Saída atualizada com sucesso!');
-                
-        } catch (\Exception $e) {
-            return back()->withInput()
-                ->with('error', 'Erro ao atualizar saída: ' . $e->getMessage());
-        }
-    }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Saida $saida)
-    {
-        try {
-            $saida->delete();
+return redirect()->route('saidas.index')->with('success', 'Saída registrada com sucesso!');
+}
 
-            return redirect()->route('saidas.index')
-                ->with('success', 'Saída excluída com sucesso!');
-                
-        } catch (\Exception $e) {
-            return back()->with('error', 'Erro ao excluir saída: ' . $e->getMessage());
-        }
-    }
+
+public function show(Saida $saida)
+{
+$saida->load(['funcionario', 'items.produto']);
+return view('saidas.show', compact('saida'));
+}
+
+
+public function destroy(Saida $saida)
+{
+    $saida->delete();
+ return redirect()->route('saidas.index')->with('success', 'Saída excluída!');
+
+}
 }

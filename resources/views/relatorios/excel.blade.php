@@ -7,6 +7,7 @@
             <th>Produto</th>
             <th>Quantidade</th>
             <th>Funcionário</th>
+            <th>Preco</th>
             <th>Data</th>
         </tr>
     </thead>
@@ -16,6 +17,7 @@
             <td>{{ $e->produto->nome }}</td>
             <td>{{ $e->quantidade }}</td>
             <td>{{ $e->funcionario->nome }}</td>
+            <td>{{ $e->produto->preco ?? '—' }}</td>
             <td>{{ $e->created_at }}</td>
         </tr>
     @endforeach
@@ -29,6 +31,7 @@
             <th>Produto</th>
             <th>Quantidade</th>
             <th>Funcionário</th>
+            <th>Preco</th>
             <th>Data</th>
         </tr>
     </thead>
@@ -38,6 +41,7 @@
             <td>{{ $s->produto->nome }}</td>
             <td>{{ $s->quantidade }}</td>
             <td>{{ $s->funcionario->nome }}</td>
+            <td>{{ $s->produto->preco ?? '—' }}</td>
             <td>{{ $s->created_at }}</td>
         </tr>
     @endforeach
@@ -51,6 +55,7 @@
             <th>Produto</th>
             <th>Quantidade</th>
             <th>Funcionário</th>
+            <th>Preco</th>
             <th>Data</th>
         </tr>
     </thead>
@@ -60,6 +65,7 @@
             <td>{{ $t->produto->nome }}</td>
             <td>{{ $t->quantidade }}</td>
             <td>{{ $t->funcionario->nome }}</td>
+            <td>{{ $t->produto->preco ?? '—' }}</td>
             <td>{{ $t->created_at }}</td>
         </tr>
     @endforeach

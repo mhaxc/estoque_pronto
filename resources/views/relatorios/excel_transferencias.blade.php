@@ -1,6 +1,7 @@
 <table>
     <thead>
-    <tr><th>Produto</th><th>Quantidade</th><th>Funcionário</th><th>Data</th></tr>
+        <h3>tranferencia</h3>
+    <tr><th>Produto</th><th>Quantidade</th><th>Funcionário</th><th>Preco</th><th>Data</th></tr>
     </thead>
     <tbody>
     @foreach($transferencias as $t)
@@ -8,6 +9,7 @@
             <td>{{ $t->produto->nome ?? '-' }}</td>
             <td>{{ $t->quantidade }}</td>
             <td>{{ $t->funcionario->nome ?? '-' }}</td>
+            <td>R$ {{ number_format($t->produto->preco, 2, ',', '.') }}</td>
             <td>{{ $t->created_at->format('d/m/Y H:i') }}</td>
         </tr>
     @endforeach

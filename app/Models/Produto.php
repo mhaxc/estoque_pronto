@@ -13,8 +13,7 @@ class Produto extends Model
         'descricao',
         'categoria_id',
         'unidade_id',
-        'preco_custo',
-        'preco_venda',
+        'preco',
         'estoque_minimo',
         'estoque_atual',
     ];
@@ -43,7 +42,7 @@ class Produto extends Model
     {
         return $this->hasMany(Transferencia::class);
     }
-    public function atualizarEstoque($quantidade, $tipo = 'entrada')
+    public function atualiarzEstoque($quantidade, $tipo = 'entrada')
     {
         if ($tipo === 'entrada') {
             $this->estoque_atual += $quantidade;

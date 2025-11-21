@@ -13,8 +13,9 @@
     <div class="col-lg-3 col-6">
         <div class="small-box bg-primary">
             <div class="inner">
-                <h3>{{ $totalProdutos }}</h3>
-                <p>Total de Produtos</p>
+                <h3>R$ {{ number_format($totalProdutos * $total, 2, ',', '.') }}</h3>
+                
+                <p>Total Preço dos Produtos</p>
             </div>
             <div class="icon">
                 <i class="fas fa-cubes"></i>

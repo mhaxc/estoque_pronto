@@ -36,12 +36,13 @@
 
 <h4>Entradas</h4>
 <table class="table">
-<tr><th>Produto</th><th>Quantidade</th><th>Funcionário</th><th>Data</th></tr>
+  <tr><th>Produto</th><th>Quantidade</th><th>Funcionário</th><th>Preco</th><th>Data</th></tr>
 @foreach ($entradas as $e)
 <tr>
     <td>{{ $e->produto->nome }}</td>
     <td>{{ $e->quantidade }}</td>
     <td>{{ $e->funcionario->nome }}</td>
+  <td>R$ {{ number_format($e->produto->preco, 2, ',', '.') }}</td>
     <td>{{ $e->created_at }}</td>
 </tr>
 @endforeach
@@ -49,12 +50,13 @@
 
 <h4>Saídas</h4>
 <table class="table">
-<tr><th>Produto</th><th>Quantidade</th><th>Funcionário</th><th>Data</th></tr>
+  <tr><th>Produto</th><th>Quantidade</th><th>Funcionário</th><th>Preco</th><th>Data</th></tr>
 @foreach ($saidas as $s)
 <tr>
     <td>{{ $s->produto->nome }}</td>
     <td>{{ $s->quantidade }}</td>
     <td>{{ $s->funcionario->nome }}</td>
+   <td>R$ {{ number_format($s->produto->preco, 2, ',', '.') }}</td>
     <td>{{ $s->created_at }}</td>
 </tr>
 @endforeach
@@ -62,12 +64,14 @@
 
 <h4>Transferências</h4>
 <table class="table">
-<tr><th>Produto</th><th>Quantidade</th><th>Funcionário</th><th>Data</th></tr>
+  <tr><th>Produto</th><th>Quantidade</th><th>Funcionário</th><th>Preco</th><th>Data</th></tr>
 @foreach ($transferencias as $t)
 <tr>
     <td>{{ $t->produto->nome }}</td>
     <td>{{ $t->quantidade }}</td>
     <td>{{ $t->funcionario->nome }}</td>
+    <td>{{ $t->(quantidade * preco)  }}</td>
+   <td>R$ {{ number_format($t->produto->preco, 2, ',', '.') }}</td>
     <td>{{ $t->created_at }}</td>
 </tr>
 @endforeach

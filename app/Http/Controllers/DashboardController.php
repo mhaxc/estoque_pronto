@@ -12,7 +12,11 @@ class DashboardController extends Controller
     public function index()
     {
         // TOTAL DE PRODUTOS
-        $totalProdutos = Produto::count();
+        $totalProdutos = Produto::count('preco');
+         
+        $total = Produto::sum('estoque_atual');
+        
+       
 
         // PRODUTOS EM BAIXA (estoque <= mínimo)
         $produtosBaixa = Produto::whereColumn('estoque_atual', '<=', 'estoque_minimo')->get();
@@ -31,7 +35,10 @@ class DashboardController extends Controller
             'produtosBaixa',
             'totalEntrada',
             'totalSaida',
-            'totalTransferencias'
+            'totalTransferencias',
+            'total'
+            
+
         ));
     }
 }
