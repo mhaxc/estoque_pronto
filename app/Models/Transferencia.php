@@ -8,25 +8,17 @@ use Illuminate\Database\Eloquent\Model;
 class Transferencia extends Model
 {
     use HasFactory;
-
-    protected $fillable = [
-        'produto_id',
-        'quantidade',
+Protected $fillable = [
         'origem',
         'destino',
         'data_transferencia',
         'funcionario_id',
-        'observacao',
-       
+        'observacao'
     ];
 
-    protected $casts = [
-        'data_transferencia' => 'date',
-    ];
-
-    public function produto()
+    public function produtos()
     {
-        return $this->belongsTo(Produto::class);
+        return $this->hasMany(Transferenciaitem::class);
     }
 
     public function funcionario()

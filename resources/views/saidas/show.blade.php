@@ -1,21 +1,33 @@
 @extends('adminlte::page')
 
 @section('content')
-<div class="container">
-    <h1>Saída #{{ $saida->id }}</h1>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Produto</th>
+            <th>Quantidade</th>
+            <th>Valor Unitário</th>
+            <th>Subtotal</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach($saida->items as $item)
+        <tr>
+            <td>{{ $item->produto->nome }}</td>
+            <td>{{ $item->quantidade }}</td>
+            <td>R$ {{ number_format($item->produto->preco, 2, ',', '.') }}</td>
+            <td>R$ {{ number_format($item->valor, 2, ',', '.') }}</td>
+        </tr>
+        @endforeach
+    </tbody>
+</table>
 
-    <div class="card">
-        <div class="card-body">
-            <p><strong>Produto:</strong> {{ $saida->produto->nome }}</p>
-            <p><strong>Quantidade:</strong> {{ $saida->quantidade }}</p>
-            <p><strong>Data:</strong> {{ $saida->data_saida->format('d/m/Y') }}</p>
-            <p><strong>Valor:</strong> R$ {{ number_format($saida->valor, 2, ',', '.') }}</p>
-            <p><strong>Funcionário:</strong> {{ $saida->funcionario->nome }}</p>
-            <p><strong>Observação:</strong> {{ $saida->observacao ?? 'Nenhuma' }}</p>
-            <p><strong>Registrado em:</strong> {{ $saida->created_at->format('d/m/Y H:i') }}</p>
-        </div>
-    </div>
+<h3 class="text-end">
+    Total da Saída: <strong>R$ {{ number_format($item->quantidade * $item->produto->preco  , 2, ',', '.') }}</strong>
+</h3>
+ <div class="mt-3">
+                
+                <a href="{{ route('saidas.index') }}" class="btn btn-secondary">Voltar</a>
+            </div>
 
-    <a href="{{ route('saidas.index') }}" class="btn btn-secondary mt-3">Voltar</a>
-</div>
 @endsection

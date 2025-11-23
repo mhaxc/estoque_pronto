@@ -1,81 +1,99 @@
 @extends('adminlte::page')
 
-@section('content')
-<div class="container">
+@section('title', 'Editar Transferência')
+
+@section('content_header')
     <h1>Editar Transferência</h1>
+@stop
 
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
+@section('content')
+    <div class="card">
+        <div class="card-body">
+            <form action="{{ route('transferencias.update', $transferencia) }}" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="form-group">
+                    <label for="origem">Origem:</label>
+                    <input type="text" name="origem" class="form-control" value="{{ $transferencia->origem }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="destino">Destino:</label>
+                    <input type="text" name="destino" class="form-control" value="{{ $transferencia->destino }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="data_transferencia">Data da Transferência:</label>
+                    <input type="datetime-local" name="data_transferencia" class="form-control" value="{{ \Carbon\Carbon::parse($transferencia->data_transferencia)->format('Y-m-d\TH:i') }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="funcionario_id">Funcionário:</label>
+                    <select name="funcionario_id" class="form-control" required>
+                        @foreach($funcionarios as $funcionario)
+                        <option value="{{ $funcionario->id }}" {{ $transferencia->funcionario_id == $funcionario->id ? 'selected' : '' }}>{{ $funcionario->nome }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="observacao">Observação:</label>
+                    <textarea name="observacao" class="form-control">{{ $transferencia->observacao }}</textarea>
+                </div>
+
+                <h4>Produtos</h4>
+                <div id="produtos">
+                    @foreach($transferencia->produtos as $index => $produto)
+                    <div class="row produto">
+                        <div class="col-md-5">
+                            <label>Produto</label>
+                            <select name="produtos[{{ $index }}][produto_id]" class="form-control" required>
+                                <option value="">Selecione</option>
+                                @foreach($produtos as $p)
+                                <option value="{{ $p->id }}" {{ $produto->produto_id == $p->id ? 'selected' : '' }}>{{ $p->nome }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label>Quantidade</label>
+                            <input type="number" name="produtos[{{ $index }}][quantidade]" class="form-control" min="1" value="{{ $produto->quantidade }}" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label>&nbsp;</label>
+                            <button type="button" class="btn btn-danger btn-block remover-produto">Remover</button>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                <button type="button" id="adicionar-produto" class="btn btn-secondary mt-2">Adicionar Produto</button>
+
+                <div class="form-group mt-3">
+                    <button type="submit" class="btn btn-success">Atualizar</button>
+                </div>
+            </form>
         </div>
-    @endif
+    </div>
+@stop
 
-    <form action="{{ route('transferencias.update', $transferencia->id) }}" method="POST">
-        @csrf
-        @method('PUT')
-        
-        <div class="mb-3">
-            <label for="produto_id" class="form-label">Produto</label>
-            <select class="form-select" id="produto_id" name="produto_id" required>
-                <option value="">Selecione um produto</option>
-                @foreach($produtos as $produto)
-                    <option value="{{ $produto->id }}" 
-                        {{ old('produto_id', $transferencia->produto_id) == $produto->id ? 'selected' : '' }}>
-                        {{ $produto->nome }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
+@section('js')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let index = {{ count($transferencia->produtos) }};
+        document.getElementById('adicionar-produto').addEventListener('click', function() {
+            let novoProduto = document.querySelector('.produto').cloneNode(true);
+            novoProduto.querySelectorAll('input, select').forEach(function(campo) {
+                campo.name = campo.name.replace(/\[\d\]/, '[' + index + ']');
+                campo.value = '';
+            });
+            document.getElementById('produtos').appendChild(novoProduto);
+            index++;
+        });
 
-        <div class="mb-3">
-            <label for="quantidade" class="form-label">Quantidade</label>
-            <input type="number" class="form-control" id="quantidade" name="quantidade" 
-                value="{{ old('quantidade', $transferencia->quantidade) }}" 
-                min="1" required>
-        </div>
-
-        <div class="mb-3">
-            <label for="data_transferencia" class="form-label">Data da Transferência</label>
-            <input type="date" class="form-control" id="data_transferencia" name="data_transferencia"
-                value="{{ old('data_transferencia', $transferencia->data_transferencia->format('Y-m-d')) }}" required>
-        </div>
-
-        <div class="mb-3">
-            <label for="origem" class="form-label">Origem</label>
-            <input type="text" class="form-control" id="origem" name="origem"
-                value="{{ old('origem', $transferencia->origem) }}" maxlength="255" required>
-        </div>
-
-        <div class="mb-3">
-            <label for="destino" class="form-label">Destino</label>
-            <input type="text" class="form-control" id="destino" name="destino"
-                value="{{ old('destino', $transferencia->destino) }}" maxlength="255" required>
-        </div>
-
-        <div class="mb-3">
-            <label for="observacao" class="form-label">Observação</label>
-            <textarea class="form-control" id="observacao" name="observacao" rows="3">{{ old('observacao', $transferencia->observacao) }}</textarea>
-        </div>
-
-        <div class="mb-3">
-            <label for="funcionario_id" class="form-label">Funcionário Responsável</label>
-            <select class="form-select" id="funcionario_id" name="funcionario_id" required>
-                <option value="">Selecione um funcionário</option>
-                @foreach($funcionarios as $funcionario)
-                    <option value="{{ $funcionario->id }}"
-                        {{ old('funcionario_id', $transferencia->funcionario_id) == $funcionario->id ? 'selected' : '' }}>
-                        {{ $funcionario->nome }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-        <button type="submit" class="btn btn-primary">Atualizar Transferência</button>
-        <a href="{{ route('transferencias.index') }}" class="btn btn-secondary">Cancelar</a>
-    </form>
-</div>
-@endsection
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('remover-produto')) {
+                if (document.querySelectorAll('.produto').length > 1) {
+                    e.target.closest('.produto').remove();
+                } else {
+                    alert('Pelo menos um produto é necessário.');
+                }
+            }
+        });
+    });
+</script>
+@stop

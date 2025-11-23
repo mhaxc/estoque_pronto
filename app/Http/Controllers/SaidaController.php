@@ -35,6 +35,8 @@ $request->validate([
 'items.*.produto_id' => 'required|exists:produtos,id',
 'items.*.quantidade' => 'required|numeric|min:1',
 ]);
+        
+
 
 
 // Criar saída principal
@@ -51,9 +53,11 @@ SaidaItem::create([
 'saida_id' => $saida->id,
 'produto_id' => $item['produto_id'],
 'quantidade' => $item['quantidade'],
-]);
-}
 
+]);
+        
+}
+      
 
 return redirect()->route('saidas.index')->with('success', 'Saída registrada com sucesso!');
 }

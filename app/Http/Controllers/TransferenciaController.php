@@ -1,5 +1,6 @@
 <?php
 
+// app/Http/Controllers/TransferenciaController.php
 namespace App\Http\Controllers;
 
 use App\Models\Transferencia;
@@ -11,7 +12,7 @@ class TransferenciaController extends Controller
 {
     public function index()
     {
-        $transferencias = Transferencia::with(['produto', 'funcionario'])->paginate(10);
+        $transferencias = Transferencia::with('funcionario')->get();
         return view('transferencias.index', compact('transferencias'));
     }
 
@@ -24,24 +25,32 @@ class TransferenciaController extends Controller
 
     public function store(Request $request)
     {
-         $request->validate([
-            'produto_id' => 'required|exists:produtos,id',
-            'quantidade' => 'required|integer|min:1',
+        $request->validate([
+            'origem' => 'required|string',
+            'destino' => 'required|string',
             'data_transferencia' => 'required|date',
-            'origem' => 'required|string|max:255',
-            'destino' => 'required|string|max:255',
+            'funcionario_id' => 'required|exists:funcionarios,id',
             'observacao' => 'nullable|string',
-            'funcionario_id' => 'required|exists:funcionarios,id'
+            'produtos' => 'required|array',
+            'produtos.*.produto_id' => 'required|exists:produtos,id',
+            'produtos.*.quantidade' => 'required|integer|min:1'
         ]);
 
-        Transferencia::create($request->all());
+        $transferencia = Transferencia::create($request->only(['origem', 'destino', 'data_transferencia', 'funcionario_id', 'observacao']));
 
-        return redirect()->route('transferencias.index')
-            ->with('success', 'Transferência registrada com sucesso!');
+        foreach ($request->produtos as $produto) {
+            $transferencia->produtos()->create([
+                'produto_id' => $produto['produto_id'],
+                'quantidade' => $produto['quantidade']
+            ]);
+        }
+
+        return redirect()->route('transferencias.index')->with('success', 'Transferência criada com sucesso.');
     }
 
     public function show(Transferencia $transferencia)
     {
+        $transferencia->load('produtos.produto', 'funcionario');
         return view('transferencias.show', compact('transferencia'));
     }
 
@@ -49,33 +58,42 @@ class TransferenciaController extends Controller
     {
         $produtos = Produto::all();
         $funcionarios = Funcionario::all();
+        $transferencia->load('produtos');
         return view('transferencias.edit', compact('transferencia', 'produtos', 'funcionarios'));
     }
 
     public function update(Request $request, Transferencia $transferencia)
     {
-        $validated = $request->validate([
-            'produto_id' => 'required|exists:produtos,id',
-            'quantidade' => 'required|integer|min:1',
+        $request->validate([
+            'origem' => 'required|string',
+            'destino' => 'required|string',
             'data_transferencia' => 'required|date',
-            'origem' => 'required|string|max:255',
-            'destino' => 'required|string|max:255',
+            'funcionario_id' => 'required|exists:funcionarios,id',
             'observacao' => 'nullable|string',
-            'funcionario_id' => 'required|exists:funcionarios,id'
+            'produtos' => 'required|array',
+            'produtos.*.produto_id' => 'required|exists:produtos,id',
+            'produtos.*.quantidade' => 'required|integer|min:1'
         ]);
 
-       
+        $transferencia->update($request->only(['origem', 'destino', 'data_transferencia', 'funcionario_id', 'observacao']));
 
+        // Remover produtos antigos e adicionar os novos
+        $transferencia->produtos()->delete();
+        foreach ($request->produtos as $produto) {
+            $transferencia->produtos()->create([
+                'produto_id' => $produto['produto_id'],
+                'quantidade' => $produto['quantidade']
+            ]);
+        }
 
-        return redirect()->route('transferencias.index')
-            ->with('success', 'Transferência atualizada com sucesso!');
+        return redirect()->route('transferencias.index')->with('success', 'Transferência atualizada com sucesso.');
     }
 
     public function destroy(Transferencia $transferencia)
     {
+        $transferencia->produtos()->delete();
         $transferencia->delete();
 
-        return redirect()->route('transferencias.index')
-            ->with('success', 'Transferência excluída com sucesso!');
+        return redirect()->route('transferencias.index')->with('success', 'Transferência excluída com sucesso.');
     }
 }
