@@ -18,7 +18,7 @@ class SaidaController extends Controller
      */
     public function index()
     {
-        $saidas = Saida::with('funcionario')->orderBy('id', 'desc')->paginate(20);
+        $saidas = Saida::with('funcionario')->orderBy('id', 'desc')->paginate(10);
         return view('saidas.index', compact('saidas'));
     }
 

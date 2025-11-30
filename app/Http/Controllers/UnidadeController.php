@@ -12,7 +12,7 @@ class UnidadeController extends Controller
      */
     public function index()
     {
-        $unidades = Unidade::all();
+        $unidades = Unidade::paginate(10);
         return view('unidades.index', compact('unidades'));
         
     }

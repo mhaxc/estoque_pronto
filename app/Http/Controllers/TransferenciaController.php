@@ -15,7 +15,7 @@ class TransferenciaController extends Controller
 {
 public function index()
 {
-$transferencias = Transferencia::with('funcionario')->orderBy('id','DESC')->paginate(20);
+$transferencias = Transferencia::with('funcionario')->orderBy('id','DESC')->paginate(10);
 return view('transferencias.index', compact('transferencias'));
 }
 
