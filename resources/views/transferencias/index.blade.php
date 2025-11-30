@@ -24,7 +24,7 @@
                             <th>Destino</th>
                             <th>Funcionário</th>
                             <th>Produtos</th>
-                            <th>Total Itens</th>
+                            <th>Total Itens e valor</th>
                             <th width="120">Ações</th>
                         </tr>
                     </thead>
@@ -51,6 +51,16 @@
                             </td>
                             <td>
                                 <span class="badge badge-primary">{{ $transferencia->items->sum('quantidade') }}</span>
+                                <table>
+       <tfoot>
+                    <tr>
+                        <th colspan="3" class="text-right">Total Geral:</th>
+                        <th>R$ {{ number_format($transferencia->items->sum(function($item) {
+                            return $item->produto->preco * $item->quantidade;
+                        }), 2, ',', '.') }}</th>
+                    </tr>
+        </tfoot>
+</table>
                             </td>
                             <td>
                                 <div class="btn-group">

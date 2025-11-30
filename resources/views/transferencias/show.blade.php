@@ -31,10 +31,10 @@
 @endforeach
 </tbody>
 </table>
-
+ 
 </div>
 <table>
-    <tfoot>
+       <tfoot>
                     <tr>
                         <th colspan="3" class="text-right">Total Geral:</th>
                         <th>R$ {{ number_format($transferencias->items->sum(function($item) {
@@ -42,9 +42,9 @@
                         }), 2, ',', '.') }}</th>
                     </tr>
         </tfoot>
-            </table>
+</table>
 
-         <div class="mt-3">
+            <div class="mt-3">
                 <a href="{{ route('transferencias.index') }}" class="btn btn-secondary">Voltar</a>
                 <a href="{{ route('transferencias.edit', $transferencias) }}"class="btn btn-warning " title="Editar">Editar</a>
             </div>
@@ -58,7 +58,7 @@
             </div>
 
 @endsection
-<tfoot>
+
     
 
     

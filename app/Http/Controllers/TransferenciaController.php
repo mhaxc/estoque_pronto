@@ -110,4 +110,12 @@ return redirect()->route('transferencias.index')
 ->with('success', 'Transferência atualizada com sucesso!');
 }
 
+public function destroy(Transferencia $transferencia)
+{
+    $transferencia->delete();
+    
+    return redirect()->route('transferencias.index')
+        ->with('success', 'Transferência deletada com sucesso!');
+}
+
 }
