@@ -65,8 +65,8 @@ return redirect()->route('transferencias.index')->with('success','Transferência
 
 public function show($id)
 {
-$transferencia = Transferencia::with(['items','funcionario'])->findOrFail($id);
-return view('transferencias.show', compact('transferencia'));
+$transferencias = Transferencia::with(['items','funcionario'])->findOrFail($id);
+return view('transferencias.show', compact('transferencias'));
 }
 public function edit($id)
 {
