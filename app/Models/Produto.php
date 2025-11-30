@@ -28,10 +28,7 @@ class Produto extends Model
         return $this->belongsTo(Unidade::class);
     }
 
-    public function entradas()
-    {
-        return $this->hasMany(Entrada::class);
-    }
+
 
     public function saidas()
     {
@@ -57,5 +54,10 @@ class Produto extends Model
         return $this->estoque_atual <= $this->estoque_minimo;
     }
 
-
+public function entradas()
+    {
+        return $this->belongsToMany(Entrada::class, 'entrada_produtos')
+            ->withPivot('quantidade')
+            ->withTimestamps();
+    }
 }

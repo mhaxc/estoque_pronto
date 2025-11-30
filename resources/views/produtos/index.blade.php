@@ -43,7 +43,11 @@
                     <form action="{{ route('produtos.destroy', $produto->id) }}" method="POST" class="d-inline">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza?')">Excluir</button>
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza?')">
+
+                         <i class="fas fa-trash"> excluir </i>
+                        </button>
+                        
                     </form>
                     <td>
                     @if($produto->estoque_atual <= $produto->estoque_minimo)

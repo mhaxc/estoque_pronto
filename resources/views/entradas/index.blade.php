@@ -1,64 +1,105 @@
 @extends('adminlte::page')
 
-@section('content')
-<div class="container">
-    <h1>Controle de Entradas</h1>
-    
-    <div class="mb-3">
-        <a href="{{ route('entradas.create') }}" class="btn btn-primary">
-            Nova Entrada
-        </a>
-    </div>
-       @if(session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
+@section('title', 'Entradas')
 
-    <div class="card">
-        <div class="card-header">
-            <h5 class="mb-0">Lista de Entradas</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Produto</th>
-                            <th>Quantidade</th>
-                            <th>Funcionário</th>
-                            <th>Nota Fiscal</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($entradas as $entrada)
-                        <tr>
-                            <td>{{ $entrada->data_entrada->format('d/m/Y') }}</td>
-                            <td>{{ $entrada->produto->nome }}</td>
-                            <td>{{ $entrada->quantidade }}</td>
-                            <td>{{ $entrada->funcionario->nome }}</td>
-                            <td>{{ $entrada->numero_nota ?? 'N/A' }}</td>
-                            <td>
-                                <a href="{{ route('entradas.show', $entrada) }}" 
-                                   class="btn btn-sm btn-info">Ver</a>
-                                <a href="{{ route('entradas.edit', $entrada) }}" 
-                                   class="btn btn-sm btn-warning">Editar</a>
-                                   <form action="{{ route('entradas.destroy', $entrada) }}" method="POST" style="display:inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza?')">Excluir</button>
+@section('content_header')
+    <h1>Entradas de Produtos</h1>
+@stop
+
+@section('content')
+
+@if(session('success'))
+    <div class="alert alert-success">{{ session('success') }}</div>
+@endif
+
+<a href="{{ route('entradas.create') }}" class="btn btn-primary mb-3">Nova Entrada</a>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nº Nota</th>
+                    <th>Data Entrada</th>
+                    <th>Produtos</th>
+                    <th>Qtd Total</th>
+                    <th>Funcionário</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach($entradas as $entrada)
+                <tr>
+                    <td>{{ $entrada->id }}</td>
+                    <td>{{ $entrada->numero_nota }}</td>
+                    <td>{{ \Carbon\Carbon::parse($entrada->data_entrada)->format('d/m/Y') }}</td>
+                    <td>
+                        @if($entrada->produtos->count() > 0)
+                            <ul class="list-unstyled mb-0">
+                                @foreach($entrada->produtos as $produto)
+                                    <li class="text-sm">
+                                        • {{ $produto->nome }} 
+                                        <small class="text-muted">
+                                            (Qtd: {{ $produto->pivot->quantidade ?? 'N/A' }})
+                                        </small>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <span class="text-muted">Nenhum produto</span>
+                        @endif
+                    </td>
+                    <td>{{ $entrada->produtos->sum('pivot.quantidade') ?? 0 }}</td>
+                    <td>
+                        @if($entrada->funcionario)
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-user mr-2"></i>
+                                {{ $entrada->funcionario->name }}
+                            </div>
+                        @else
+                            <span class="text-muted">Não atribuído</span>
+                        @endif
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{{ route('entradas.show', $entrada->id) }}" class = "btn btn-info btn-sm">Ver</a>
+                            
+                            <a href="{{ route('entradas.edit', $entrada->id) }}" class = "btn btn-warning btn-sm">
+                               Editar
+                            </a>
+                            <form action="{{ route('entradas.destroy', $entrada->id) }}" method="POST">
+                                @csrf @method('DELETE')
+                                <button class="btn btn-danger" onclick="return confirm('Tem certeza?')">
+                                    <i class="fas fa-trash"> excluir </i>
+                                </button>
                             </form>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-            
-                    {{ $entradas->links() }}
-        </div>
+                        </div>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        {{ $entradas->links() }}
     </div>
 </div>
+
+@section('css')
+<style>
+    .list-unstyled li {
+        padding: 2px 0;
+        border-bottom: 1px dotted #eee;
+    }
+    .list-unstyled li:last-child {
+        border-bottom: none;
+    }
+    .btn-group form {
+        display: inline-block;
+        margin-left: -1px;
+    }
+</style>
+@endsection
+
 @endsection

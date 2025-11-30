@@ -1,34 +1,30 @@
 <?php
 
 namespace App\Models;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Entrada extends Model
 {
-     use HasFactory;
+    use HasFactory;
 
     protected $fillable = [
-        'produto_id',
-        'quantidade',
-        'data_entrada',
-        'observacao',
         'funcionario_id',
-        'numero_nota'
+        'numero_nota',
+        'data_entrada',
+        'observacao'
     ];
 
-    protected $casts = [
-        'data_entrada' => 'date'
-    ];
-
-    public function produto()
+    public function produtos()
     {
-        return $this->belongsTo(Produto::class);
+        return $this->belongsToMany(Produto::class, 'entrada_produtos')
+            ->withPivot('quantidade')
+            ->withTimestamps();
     }
 
     public function funcionario()
     {
-        return $this->belongsTo(Funcionario::class);
+        return $this->belongsTo(User::class, 'funcionario_id');
     }
-
 }

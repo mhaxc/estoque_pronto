@@ -19,14 +19,13 @@ class TransferenciaItem extends Model
         'quantidade'
     ];
 
-    public function produto()
-    {
-        return $this->belongsTo(Produto::class);
-    }
+ public function transferencia()
+{
+    return $this->belongsTo(Transferencia::class);
+}
 
-    public function transferencia()
-    {
-        return $this->belongsTo(Transferencia::class);
-    }
-
+public function produto()
+{
+    return $this->belongsTo(Produto::class);
+}
 }

@@ -16,15 +16,27 @@ Protected $fillable = [
         'observacao'
     ];
 
-    public function produtos()
-    {
-        return $this->hasMany(Transferenciaitem::class);
-    }
-
-    public function funcionario()
-    {
-        return $this->belongsTo(Funcionario::class);
-    }
 
 
+
+
+protected $casts = [
+    'data_transferencia' => 'date',
+];
+
+public function funcionario()
+{
+    return $this->belongsTo(Funcionario::class);
+}
+
+public function items()
+{
+    return $this->hasMany(TransferenciaItem::class);
+}
+
+public function produtos()
+{
+    return $this->belongsToMany(Produto::class, 'transferencia_itens')
+        ->withPivot('quantidade');
+}
 }

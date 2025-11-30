@@ -40,7 +40,10 @@
                             <form action="{{ route('funcionarios.destroy', $funcionario) }}" method="POST" style="display:inline">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza?')">Excluir</button>
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza?')">
+                                  <i class="fas fa-trash"> excluir </i>  
+                                
+                                </button>
                             </form>
                         </td>
                     </tr>

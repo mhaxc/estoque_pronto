@@ -1,40 +1,28 @@
 @extends('adminlte::page')
-
-@section('title', 'Detalhes da Transferência')
-
-@section('content_header')
-    <h1>Detalhes da Transferência</h1>
-@stop
-
+@section('title','Detalhes da Transferência')
+@section('content_header') <h1>Detalhes</h1> @endsection
 @section('content')
-    <div class="card">
-        <div class="card-body">
-            <p><strong>Origem:</strong> {{ $transferencia->origem }}</p>
-            <p><strong>Destino:</strong> {{ $transferencia->destino }}</p>
-            <p><strong>Data:</strong> {{ \Carbon\Carbon::parse($transferencia->data_transferencia)->format('d/m/Y H:i') }}</p>
-            
-            <p><strong>Funcionário:</strong> {{ $transferencia->funcionario->nome }}</p>
-            <p><strong>Observação:</strong> {{ $transferencia->observacao }}</p>
+<div class="card p-3">
+<p><strong>Origem:</strong> {{ $t->origem }}</p>
+<p><strong>Destino:</strong> {{ $t->destino }}</p>
+<p><strong>Data:</strong> {{ date('d/m/Y', strtotime($t->data_transferencia)) }}</p>
+<p><strong>Funcionário:</strong> {{ $t->funcionario->nome }}</p>
+<p><strong>Observação:</strong> {{ $t->observacao }}</p>
 
-            <h4>Produtos</h4>
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Produto</th>
-                        <th>Quantidade</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($transferencia->produtos as $produto)
-                    <tr>
-                        <td>{{ $produto->produto->nome }}</td>
-                        <td>{{ $produto->quantidade }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-             <a href="{{ route('transferencias.edit', $transferencia) }}" class="btn btn btn-warning">Editar</a>
-            <a href="{{ route('transferencias.index') }}" class="btn btn-secondary">Voltar</a>
-        </div>
-    </div>
-@stop
+
+<h4>Itens</h4>
+<table class="table table-bordered">
+<thead>
+<tr><th>Produto</th><th>Quantidade</th></tr>
+</thead>
+<tbody>
+@foreach($t->itens as $i)
+<tr>
+<td>{{ $i->produto->nome }}</td>
+<td>{{ $i->quantidade }}</td>
+</tr>
+@endforeach
+</tbody>
+</table>
+</div>
+@endsection

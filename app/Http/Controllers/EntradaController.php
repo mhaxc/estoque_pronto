@@ -6,119 +6,102 @@ use App\Models\Entrada;
 use App\Models\Produto;
 use App\Models\Funcionario;
 use Illuminate\Http\Request;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
 
 class EntradaController extends Controller
 {
-    /**
-     * Lista todas as entradas
-     */
-    public function index(): View
+    public function index()
     {
-        $entradas = Entrada::with(['produto', 'funcionario'])->paginate(10);
-        
+        $entradas = Entrada::orderBy('id', 'desc')->paginate(20);
         return view('entradas.index', compact('entradas'));
     }
 
-    /**
-     * Mostra o formulário para criar uma nova entrada
-     */
-    public function create(): View
+    public function create()
     {
-        $produtos = Produto::all();
+        $produtos = Produto::orderBy('nome')->get();
         $funcionarios = Funcionario::all();
-        
-        return view('entradas.create', compact('produtos', 'funcionarios'));
+        return view('entradas.create', compact('produtos','funcionarios'));
     }
 
-    /**
-     * Armazena uma nova entrada no banco de dados
-     */
-    public function store(Request $request): RedirectResponse
-    {
-         $request->validate(rules: [
-            'produto_id' => 'required|exists:produtos,id',
-            'quantidade' => 'required|integer|min:1',
-            'data_entrada' => 'required|date',
-            'observacao' => 'nullable|string',
-            'funcionario_id' => 'required|exists:funcionarios,id',
-            'numero_nota' => 'nullable|string|max:255'
+    public function store(Request $request)
+{
+    $request->validate([
+        'data_entrada' => 'required|date',
+        'numero_nota' => 'nullable|string',
+        'observacao' => 'nullable|string',
+        'produtos.*.produto_id' => 'required|exists:produtos,id',
+        'produtos.*.quantidade' => 'required|integer|min:1',
+    ]);
+
+    // 1. Criar a entrada
+    $entrada = Entrada::create([
+        'data_entrada' => $request->data_entrada,
+        'numero_nota'  => $request->numero_nota,
+        'observacao'   => $request->observacao,
+        'funcionario_id' => $request->funcionario_id, // se quiser pegar automático
+    ]);
+
+    // 2. Salvar os produtos relacionados
+    foreach ($request->produtos as $item) {
+
+        // Vincula entrada ao produto
+        $entrada->produtos()->attach($item['produto_id'], [
+            'quantidade' => $item['quantidade']
         ]);
 
-        Entrada::create($request->all());
-       
-        $produto = Produto::find($request->produto_id);
-        $produto->estoque_atual += $request->quantidade;
+        // 3. Atualiza automaticamente o estoque do produto
+        $produto = Produto::find($item['produto_id']);
+        $produto->estoque_atual += $item['quantidade'];
         $produto->save();
-
-        return redirect()->route('entradas.index')
-            ->with('success', 'Entrada registrada com sucesso!');
     }
 
-    /**
-     * Exibe uma entrada específica
-     */
-    public function show(Entrada $entrada): View
+    return redirect()->route('entradas.index')
+        ->with('success', 'Entrada registrada com sucesso!');
+}
+    public function show($id)
     {
-        $entrada->load(['produto', 'funcionario']);
-        
+        $entrada = Entrada::findOrFail($id);
         return view('entradas.show', compact('entrada'));
     }
 
-    /**
-     * Mostra o formulário para editar uma entrada
-     */
-    public function edit(Entrada $entrada): View
+    public function edit($id)
     {
-        $produtos = Produto::all();
-        $funcionarios = Funcionario::all();
-        
-        return view('entradas.edit', compact('entrada', 'produtos', 'funcionarios'));
+        $entrada = Entrada::findOrFail($id);
+        $produtos = Produto::orderBy('nome')->get();
+         $funcionarios = Funcionario::all();
+        return view('entradas.edit', compact('entrada', 'produtos','funcionarios'));
     }
 
-    /**
-     * Atualiza uma entrada no banco de dados
-     */
-    public function update(Request $request, Entrada $entrada): RedirectResponse
+    public function update(Request $request, $id)
     {
-         $request->validate([
-            'produto_id' => 'required|exists:produtos,id',
-            'quantidade' => 'required|integer|min:1',
-            'data_entrada' => 'required|date',
-            'observacao' => 'nullable|string',
-            'funcionario_id' => 'required|exists:funcionarios,id',
-            'numero_nota' => 'nullable|string|max:255'
-        ]);
-        // Reverter a quantidade anterior no estoque
-        $produto = Produto::find($entrada->produto_id);
-        $produto->estoque_atual -= $entrada->quantidade;
-        $produto->save();
-       
-        $entrada->update($request->all());
+        $entrada = Entrada::findOrFail($id);
 
-        // Atualizar o estoque com a nova quantidade
-        $produto = Produto::find($request->produto_id);
-        $produto->estoque_atual += $request->quantidade;
-        $produto->save();
+        $entrada->update([
+            'data_entrada' => $request->data_entrada,
+            'numero_nota' => $request->numero_nota,
+            'observacao' => $request->observacao,
+            'funcionario_id' => $request->funcionario_id,
+        ]);
 
         return redirect()->route('entradas.index')
-            ->with('success', 'Entrada atualizada com sucesso!');
+            ->with('success', 'Entrada atualizada!');
     }
 
-    /**
-     * Remove uma entrada do banco de dados
-     */
-    public function destroy(Entrada $entrada): RedirectResponse
+    public function destroy($id)
     {
-       // Reverter a quantidade no estoque
-        $produto = Produto::find($entrada->produto_id);
-        $produto->estoque_atual -= $entrada->quantidade;
-        $produto->save();
-       
+        $entrada = Entrada::findOrFail($id);
+
+        // restaura estoque antes de excluir
+        foreach ($entrada->produtos as $item) {
+            $produto = Produto::find($item->id);
+            if ($produto) {
+                $produto->estoque_atual -= $item->pivot->quantidade;
+                $produto->save();
+            }
+        }
+
         $entrada->delete();
 
         return redirect()->route('entradas.index')
-            ->with('success', 'Entrada excluída com sucesso!');
+            ->with('success', 'Entrada removida com sucesso!');
     }
 }

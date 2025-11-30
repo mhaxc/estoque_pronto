@@ -1,79 +1,170 @@
 <?php
 
-namespace App\Http\Controllers;
 
+
+namespace App\Http\Controllers;
 
 use App\Models\Saida;
 use App\Models\SaidaItem;
 use App\Models\Produto;
 use App\Models\Funcionario;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\DB;
 
 class SaidaController extends Controller
 {
-public function index()
+    /**
+     * Listagem
+     */
+    public function index()
+    {
+        $saidas = Saida::with('funcionario')->orderBy('id', 'desc')->paginate(20);
+        return view('saidas.index', compact('saidas'));
+    }
+
+    /**
+     * Form de criação
+     */
+    public function create()
+    {
+        $funcionarios = Funcionario::all();
+        $produtos = Produto::all();
+        return view('saidas.create', compact('funcionarios', 'produtos'));
+    }
+
+    /**
+     * Salvar nova saída + baixar estoque
+     */
+    public function store(Request $request)
+    {
+        DB::beginTransaction();
+
+        try {
+
+            // cria saída
+            $saida = Saida::create([
+                'data_saida'     => $request->data_saida,
+                'funcionario_id' => $request->funcionario_id,
+                'observacao'     => $request->observacao
+            ]);
+
+            // itens
+            foreach ($request->produtos as $item) {
+
+                $produto = Produto::find($item['produto_id']);
+
+                // proteção caso estoque seja insuficiente
+                if ($produto->estoque_atual < $item['quantidade']) {
+                    DB::rollBack();
+                    return redirect()->back()->with('error', 'Estoque insuficiente para o produto: ' . $produto->nome);
+                }
+
+                // salva item da saída
+                SaidaItem::create([
+                    'saida_id'   => $saida->id,
+                    'produto_id' => $item['produto_id'],
+                    'quantidade' => $item['quantidade']
+                ]);
+
+                // baixa o estoque
+                $produto->estoque_atual -= $item['quantidade'];
+                $produto->save();
+            }
+
+            DB::commit();
+            return redirect()->route('saidas.index')->with('success', 'Saída registrada com sucesso!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Erro ao salvar: ' . $e->getMessage());
+        }
+    }
+        public function show($id)
+        {
+        $saida = Saida::with(['funcionario', 'items.produto'])->findOrFail($id);
+
+        return view('saidas.show', compact('saida'));
+        }
+    public function edit($id)
+    {
+        $saida = Saida::with('items')->findOrFail($id);
+        $funcionarios = Funcionario::all();
+        $produtos = Produto::all();
+
+        return view('saidas.edit', compact('saida', 'funcionarios', 'produtos'));
+    }
+
+    /**
+     * Atualizar saída (repor estoque anterior e registrar novo)
+     */
+    public function update(Request $request, $id)
+    {
+        DB::beginTransaction();
+
+        try {
+
+            $saida = Saida::findOrFail($id);
+
+            // 1) repõe estoque dos itens antigos
+            foreach ($saida->itens as $itemAntigo) {
+                $produto = Produto::find($itemAntigo->produto_id);
+                $produto->estoque_atual += $itemAntigo->quantidade;
+                $produto->save();
+            }
+
+            // 2) deleta itens antigos
+            $saida->itens()->delete();
+
+            // 3) atualiza dados da saída
+            $saida->update([
+                'data_saida'     => $request->data_saida,
+                'funcionario_id' => $request->funcionario_id,
+                'observacao'     => $request->observacao
+            ]);
+
+            // 4) insere novos itens
+            foreach ($request->produtos as $item) {
+
+                $produto = Produto::find($item['produto_id']);
+
+                if ($produto->estoque_atual < $item['quantidade']) {
+                    DB::rollBack();
+                    return back()->with('error', 'Estoque insuficiente para: ' . $produto->nome);
+                }
+
+                SaidaItem::create([
+                    'saida_id' => $saida->id,
+                    'produto_id' => $item['produto_id'],
+                    'quantidade' => $item['quantidade']
+                ]);
+
+                // baixa estoque
+                $produto->estoque_atual -= $item['quantidade'];
+                $produto->save();
+            }
+
+            DB::commit();
+            return redirect()->route('saidas.index')->with('success', 'Saída atualizada com sucesso!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Erro ao atualizar: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Excluir saída (repor estoque automaticamente)
+     */
+   public function destroy($id)
 {
-$saidas = Saida::with(['funcionario', 'items.produto'])->paginate(20);
-return view('saidas.index', compact('saidas'));
-}
-
-
-public function create()
-{
-$produtos = Produto::all();
-$funcionarios = Funcionario::all();
-return view('saidas.create', compact('produtos','funcionarios'));
-}
-
-
-public function store(Request $request)
-{
-$request->validate([
-'funcionario_id' => 'required|exists:funcionarios,id',
-'data_saida' => 'required|date',
-'items.*.produto_id' => 'required|exists:produtos,id',
-'items.*.quantidade' => 'required|numeric|min:1',
-]);
-        
-
-
-
-// Criar saída principal
-$saida = Saida::create([
-'funcionario_id' => $request->funcionario_id,
-'data_saida' => $request->data_saida,
-'observacao' => $request->observacao,
-]);
-
-
-// Inserir itens vinculados
-foreach ($request->input('produtos', []) as $item) {
-SaidaItem::create([
-'saida_id' => $saida->id,
-'produto_id' => $item['produto_id'],
-'quantidade' => $item['quantidade'],
-
-]);
-        
-}
-      
-
-return redirect()->route('saidas.index')->with('success', 'Saída registrada com sucesso!');
-}
-
-
-public function show(Saida $saida)
-{
-$saida->load(['funcionario', 'items.produto']);
-return view('saidas.show', compact('saida'));
-}
-
-
-public function destroy(Saida $saida)
-{
+    
+    $saida = Saida::findOrFail($id);
     $saida->delete();
- return redirect()->route('saidas.index')->with('success', 'Saída excluída!');
+
+    return redirect()
+        ->route('saidas.index')
+        ->with('success', 'Saída excluída com sucesso!');
 
 }
+
 }
