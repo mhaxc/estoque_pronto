@@ -11,7 +11,7 @@ use App\Http\Controllers\FuncionarioController;
 use App\Http\Controllers\EntradaController;
 use App\Http\Controllers\SaidaController;
 use App\Http\Controllers\RelatorioController;
-
+use App\Http\Controllers\RelatorioExportController;
 
 Route::get('/', [DashboardController::class, 'index'])
     ->middleware('auth')
@@ -32,23 +32,13 @@ Route::middleware('auth')->group(function () {
     Route::resource('saidas', SaidaController::class);
     Route::resource('entradas', EntradaController::class);
     Route::resource('funcionarios', FuncionarioController::class);
-    Route::resource('movimentacoes', EntradaController::class);
     Route::resource('transferencias', transferenciaController::class);
     
   
     
-    Route::prefix('relatorios')->group(function () {
-
-    Route::get('/', [RelatorioController::class, 'index'])->name('relatorios.index');
-
-    Route::get('/produtos-mais-saidos', [RelatorioController::class, 'produtosMaisSaidos'])->name('relatorios.produtos-mais-saidos');
-
-    Route::get('/movimentacoes', [RelatorioController::class, 'movimentacoes'])->name('relatorios.movimentacoes');
-
-    Route::get('/export/pdf', [RelatorioController::class, 'exportPDF'])->name('relatorios.export.pdf');
-
-    Route::get('/export/excel', [RelatorioController::class, 'exportExcel'])->name('relatorios.export.excel');
-
-});
+Route::get('/relatorios', [RelatorioController::class, 'index'])->name('relatorios.index');
+Route::get('/relatorios/pdf', [RelatorioExportController::class, 'pdf'])->name('relatorios.pdf');
+Route::get('/relatorios/excel', [RelatorioExportController::class, 'excel'])->name('relatorios.excel');
+;
 
 require __DIR__.'/auth.php';

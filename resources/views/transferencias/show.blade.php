@@ -47,6 +47,7 @@
             <div class="mt-3">
                 <a href="{{ route('transferencias.index') }}" class="btn btn-secondary">Voltar</a>
                 <a href="{{ route('transferencias.edit', $transferencias) }}"class="btn btn-warning " title="Editar">Editar</a>
+                
             </div>
 
             <br>
@@ -55,6 +56,10 @@
                         @method('DELETE')
                         <button type="submit" class="btn btn-danger">Excluir</button>
                     </form>
+
+                     <button onclick="window.print()" class="btn btn-info btn-lg ml-1">
+                  <i class="fas fa-print"></i> Imprimir
+                 </button>
             </div>
 
 @endsection

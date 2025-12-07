@@ -71,20 +71,52 @@ class EntradaController extends Controller
         return view('entradas.edit', compact('entrada', 'produtos','funcionarios'));
     }
 
-    public function update(Request $request, $id)
-    {
-        $entrada = Entrada::findOrFail($id);
+   public function update(Request $request, $id)
+{
+    $entrada = Entrada::findOrFail($id);
 
-        $entrada->update([
-            'data_entrada' => $request->data_entrada,
-            'numero_nota' => $request->numero_nota,
-            'observacao' => $request->observacao,
-            'funcionario_id' => $request->funcionario_id,
+    $request->validate([
+        'data_entrada' => 'required|date',
+        'numero_nota' => 'nullable|string',
+        'observacao' => 'nullable|string',
+        'produtos.*.produto_id' => 'required|exists:produtos,id',
+        'produtos.*.quantidade' => 'required|integer|min:1',
+    ]);
+
+    // 1. Reverter o estoque dos produtos antigos
+    foreach ($entrada->produtos as $produtoAntigo) {
+        $produto = Produto::find($produtoAntigo->id);
+        if ($produto) {
+            $produto->estoque_atual -= $produtoAntigo->pivot->quantidade;
+            $produto->save();
+        }
+    }
+
+    // 2. Atualizar os dados básicos da entrada
+    $entrada->update([
+        'data_entrada' => $request->data_entrada,
+        'numero_nota' => $request->numero_nota,
+        'observacao' => $request->observacao,
+        'funcionario_id' => $request->funcionario_id,
+    ]);
+
+    // 3. Remover produtos antigos
+    $entrada->produtos()->detach();
+
+    // 4. Adicionar novos produtos e atualizar estoque
+    foreach ($request->produtos as $item) {
+        $entrada->produtos()->attach($item['produto_id'], [
+            'quantidade' => $item['quantidade']
         ]);
 
-        return redirect()->route('entradas.index')
-            ->with('success', 'Entrada atualizada!');
+        $produto = Produto::find($item['produto_id']);
+        $produto->estoque_atual += $item['quantidade'];
+        $produto->save();
     }
+
+    return redirect()->route('entradas.index')
+        ->with('success', 'Entrada atualizada com sucesso!');
+}
 
     public function destroy($id)
     {

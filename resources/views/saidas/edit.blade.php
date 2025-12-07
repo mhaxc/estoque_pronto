@@ -13,6 +13,16 @@
     </div>
 
     <div class="card-body">
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <ul>
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <form action="{{ route('saidas.update', $saida->id) }}" method="POST" id="form-saida">
             @csrf
             @method('PUT')
@@ -41,7 +51,7 @@
                         <label for="data_saida">Data da Saída *</label>
                         <input type="date" name="data_saida" id="data_saida" 
                                class="form-control @error('data_saida') is-invalid @enderror"
-                              value="{{ old('data_saida', isset($saida->data_saida) ? (is_string($saida->data_saida) ? $saida->data_saida : $saida->data_saida->format('Y-m-d')) : '') }}"
+                               value="{{ old('data_saida', $saida->data_saida ? (is_string($saida->data_saida) ? $saida->data_saida : $saida->data_saida->format('Y-m-d')) : '') }}" required>
                         @error('data_saida')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -93,7 +103,7 @@
                             <div class="form-group">
                                 <label>Preço Unitário</label>
                                 <input type="text" class="form-control preco-unitario" 
-                                       value="R$ {{ number_format($item->produto->preco, 2, ',', '.') }}" readonly>
+                                       value="R$ {{ number_format($item->preco_unitario ?? $item->produto->preco, 2, ',', '.') }}" readonly>
                             </div>
                         </div>
                         
@@ -111,11 +121,15 @@
                     
                     <div class="row">
                         <div class="col-md-12">
-                            <strong>Subtotal: R$ <span class="subtotal">{{ number_format($item->produto->preco * $item->quantidade, 2, ',', '.') }}</span></strong>
+                            @php
+                                $precoUnitario = $item->preco_unitario ?? $item->produto->preco;
+                                $subtotal = $precoUnitario * $item->quantidade;
+                            @endphp
+                            <strong>Subtotal: R$ <span class="subtotal">{{ number_format($subtotal, 2, ',', '.') }}</span></strong>
                         </div>
                     </div>
                     
-                    <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
+                    <input type="hidden" name="item[{{ $index }}][id]" value="{{ $item->id }}">
                 </div>
                 @endforeach
             </div>
@@ -259,9 +273,11 @@
             // Evento para remover produto
             if (removerBtn) {
                 removerBtn.addEventListener('click', function() {
-                    item.remove();
-                    calcularTotal();
-                    reordenarIndexes();
+                    if (confirm('Tem certeza que deseja remover este produto?')) {
+                        item.remove();
+                        calcularTotal();
+                        reordenarIndexes();
+                    }
                 });
             }
 
@@ -289,7 +305,7 @@
             
             document.querySelectorAll('.produto-item').forEach(item => {
                 const subtotalText = item.querySelector('.subtotal').textContent;
-                const subtotalValue = parseFloat(subtotalText.replace('.', '').replace(',', '.')) || 0;
+                const subtotalValue = parseFloat(subtotalText.replace(/\./g, '').replace(',', '.')) || 0;
                 total += subtotalValue;
             });
             
@@ -306,17 +322,21 @@
             items.forEach((item, index) => {
                 // Atualizar os names dos inputs
                 const selects = item.querySelectorAll('select[name^="items["]');
-                const inputs = item.querySelectorAll('input[name^="items["]');
+                const quantidades = item.querySelectorAll('input[name^="items["][name$="[quantidade]"]');
                 
                 selects.forEach(select => {
-                    select.name = select.name.replace(/items\[\d+\]/, `items[${index}]`);
+                    select.name = `items[${index}][produto_id]`;
                 });
                 
-                inputs.forEach(input => {
-                    if (input.type !== 'hidden' || !input.name.includes('[id]')) {
-                        input.name = input.name.replace(/items\[\d+\]/, `items[${index}]`);
-                    }
+                quantidades.forEach(input => {
+                    input.name = `items[${index}][quantidade]`;
                 });
+                
+                // Atualizar hidden id se existir
+                const hiddenId = item.querySelector('input[type="hidden"][name^="items["][name$="[id]"]');
+                if (hiddenId) {
+                    hiddenId.name = `items[${index}][id]`;
+                }
             });
             
             produtoIndex = items.length;
@@ -340,6 +360,9 @@
                     temErro = true;
                     select.classList.add('is-invalid');
                     quantidade.classList.add('is-invalid');
+                } else {
+                    select.classList.remove('is-invalid');
+                    quantidade.classList.remove('is-invalid');
                 }
             });
             

@@ -11,8 +11,7 @@ class SaidaItem extends Model
         'produto_id',
         'quantidade',
     ];
-
-    public function saida()
+ public function saida()
 {
 return $this->belongsTo(Saida::class);
 }

@@ -17,6 +17,9 @@
             <div class="mt-3">
                 <a href="{{ route('produtos.edit', $produto->id) }}" class="btn btn-warning">Editar</a>
                 <a href="{{ route('produtos.index') }}" class="btn btn-secondary">Voltar</a>
+                 <button onclick="window.print()" class="btn btn-info btn-lg ml-1">
+                  <i class="fas fa-print"></i> Imprimir
+                 </button>
             </div>
         </div>
     </div>

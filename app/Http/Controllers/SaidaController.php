@@ -106,14 +106,14 @@ class SaidaController extends Controller
             $saida = Saida::findOrFail($id);
 
             // 1) repõe estoque dos itens antigos
-            foreach ($saida->itens as $itemAntigo) {
+            foreach ($saida->items as $itemAntigo) {
                 $produto = Produto::find($itemAntigo->produto_id);
                 $produto->estoque_atual += $itemAntigo->quantidade;
                 $produto->save();
             }
 
             // 2) deleta itens antigos
-            $saida->itens()->delete();
+            $saida->items()->delete();
 
             // 3) atualiza dados da saída
             $saida->update([

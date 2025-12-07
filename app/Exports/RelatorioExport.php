@@ -2,71 +2,55 @@
 
 namespace App\Exports;
 
-use Illuminate\Contracts\View\View;
-use Maatwebsite\Excel\Concerns\FromView;
-use Maatwebsite\Excel\Concerns\WithMultipleSheets;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class RelatorioExport implements WithMultipleSheets
+class RelatorioExport implements FromCollection, WithHeadings
 {
-    protected $request;
+    private $dados;
+    private $tipo;
 
-    public function __construct($request)
+    public function __construct($dados, $tipo)
     {
-        $this->request = $request;
+        $this->dados = $dados;
+        $this->tipo = $tipo;
     }
 
-    public function sheets(): array
+    public function collection()
     {
-        $sheets = [];
+        return $this->dados->map(function ($d) {
+            return [
+                'Data' => $this->tipo == 'entrada'
+                    ? $d->entrada->data_entrada
+                    : ($this->tipo == 'saida'
+                        ? $d->saida->data_saida
+                        : $d->transferencia->data_transferencia),
 
-        $sheets[] = new class($this->request) implements FromView {
-            private $r;
-            public function __construct($r){ $this->r = $r; }
-            public function view(): View {
-                $func = $this->r->funcionario_id;
-                $inicio = $this->r->inicio;
-                $fim = $this->r->fim;
+                'Funcionário' => $this->tipo == 'entrada'
+                    ? $d->entrada->funcionario->nome
+                    : ($this->tipo == 'saida'
+                        ? $d->saida->funcionario->nome
+                        : $d->transferencia->funcionario->nome),
 
-                $entradas = \App\Models\Entrada::when($func, fn($q) => $q->where('funcionario_id', $func))
-                    ->when($inicio && $fim, fn($q) => $q->whereBetween('created_at', [$inicio, $fim]))
-                    ->with('produto', 'funcionario')->get();
+                'Produto' => $d->produto->nome,
+                'Categoria' => $d->produto->categoria->nome,
+                'Quantidade' => $d->quantidade,
+                'Preco' => $d->produto->preco,
+                'Tipo' => ucfirst($this->tipo),
+            ];
+        });
+    }
 
-                return view('relatorios.excel_entradas', ['entradas' => $entradas]);
-            }
-        };
-
-        $sheets[] = new class($this->request) implements FromView {
-            private $r;
-            public function __construct($r){ $this->r = $r; }
-            public function view(): View {
-                $func = $this->r->funcionario_id;
-                $inicio = $this->r->inicio;
-                $fim = $this->r->fim;
-
-                $saidas = \App\Models\Saida::when($func, fn($q) => $q->where('funcionario_id', $func))
-                    ->when($inicio && $fim, fn($q) => $q->whereBetween('created_at', [$inicio, $fim]))
-                    ->with('produto', 'funcionario')->get();
-
-                return view('relatorios.excel_saidas', ['saidas' => $saidas]);
-            }
-        };
-
-        $sheets[] = new class($this->request) implements FromView {
-            private $r;
-            public function __construct($r){ $this->r = $r; }
-            public function view(): View {
-                $func = $this->r->funcionario_id;
-                $inicio = $this->r->inicio;
-                $fim = $this->r->fim;
-
-                $transferencias = \App\Models\Transferencia::when($func, fn($q) => $q->where('funcionario_id', $func))
-                    ->when($inicio && $fim, fn($q) => $q->whereBetween('created_at', [$inicio, $fim]))
-                    ->with('produto', 'funcionario')->get();
-
-                return view('relatorios.excel_transferencias', ['transferencias' => $transferencias]);
-            }
-        };
-
-        return $sheets;
+    public function headings(): array
+    {
+        return [
+            'Data',
+            'Funcionário',
+            'Produto',
+            'Categoria',
+            'Quantidade',
+            'Preco',
+            'Tipo'
+        ];
     }
 }

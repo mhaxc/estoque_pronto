@@ -18,7 +18,11 @@
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-danger">Excluir</button>
+                        
                     </form>
+                     <button onclick="window.print()" class="btn btn-info btn-lg ml-1">
+                  <i class="fas fa-print"></i> Imprimir
+                 </button>
                 </div>
             </div>
         </div>

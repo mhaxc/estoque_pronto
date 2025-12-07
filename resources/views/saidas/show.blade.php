@@ -52,7 +52,13 @@
 
             <div class="mt-3">
                 <a href="{{ route('saidas.index') }}" class="btn btn-secondary">Voltar</a>
+
+                 <button onclick="window.print()" class="btn btn-info btn-lg ml-1">
+                  <i class="fas fa-print"></i> Imprimir
+                 </button>
             </div>
+             
+   
         </div>
     </div>
 @stop
