@@ -16,6 +16,8 @@ use App\Http\Controllers\RelatorioExportController;
 Route::get('/', [DashboardController::class, 'index'])
     ->middleware('auth')
     ->name('dashboard');
+    
+Route::get('/dashboard/export/{format}', [DashboardController::class, 'export'])->name('dashboard.export');
 
 
 Route::middleware('auth')->group(function () {
