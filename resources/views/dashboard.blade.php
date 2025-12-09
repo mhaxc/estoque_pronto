@@ -25,6 +25,7 @@
         --light: #f8f9fa;
         --border-radius: 12px;
         --box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        --print: #3a506b;
     }
 
     /* Override das cores do AdminLTE para os cards */
@@ -172,7 +173,7 @@
         transition: all 0.3s ease !important;
     }
 
-    /* Filtros e exportação */
+    /* Filtros e impressão */
     .dashboard-header {
         display: flex !important;
         justify-content: space-between !important;
@@ -218,7 +219,7 @@
         outline: none !important;
     }
 
-    .export-btn {
+    .print-btn {
         display: inline-flex !important;
         align-items: center !important;
         gap: 0.5rem !important;
@@ -227,21 +228,16 @@
         font-weight: 600 !important;
         text-decoration: none !important;
         transition: all 0.3s ease !important;
-    }
-
-    .export-btn-pdf {
-        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+        background: linear-gradient(135deg, var(--print) 0%, #5c6bc0 100%) !important;
         color: white !important;
+        border: none !important;
+        cursor: pointer !important;
     }
 
-    .export-btn-excel {
-        background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
-        color: white !important;
-    }
-
-    .export-btn:hover {
+    .print-btn:hover {
         transform: translateY(-2px) !important;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        background: linear-gradient(135deg, #2c3e50 0%, #4a5bb5 100%) !important;
     }
 
     /* Gráfico compacto */
@@ -350,6 +346,38 @@
         100% { transform: translateY(-50%) rotate(360deg); }
     }
 
+    /* Estilos para impressão */
+    @media print {
+        .dashboard-header .filter-group,
+        .quick-actions,
+        .card-footer,
+        .print-btn,
+        .export-btn-pdf,
+        .export-btn-excel {
+            display: none !important;
+        }
+        
+        .small-box {
+            break-inside: avoid;
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+            margin-bottom: 10px !important;
+        }
+        
+        .card {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+        }
+        
+        .table {
+            font-size: 12px !important;
+        }
+        
+        .no-print {
+            display: none !important;
+        }
+    }
+
     /* Responsividade */
     @media (max-width: 768px) {
         .dashboard-header {
@@ -364,7 +392,7 @@
             align-items: stretch !important;
         }
         
-        .filter-select, .export-btn {
+        .filter-select, .print-btn {
             width: 100% !important;
         }
         
@@ -402,16 +430,9 @@
             </select>
         </form>
         
-        <div class="d-flex gap-2">
-            <a href="{{ route('dashboard.export', ['format' => 'pdf', 'periodo' => $periodo]) }}"
-               class="export-btn export-btn-pdf">
-                <i class="fas fa-file-pdf"></i> PDF
-            </a>
-            <a href="{{ route('dashboard.export', ['format' => 'xlsx', 'periodo' => $periodo]) }}"
-               class="export-btn export-btn-excel">
-                <i class="fas fa-file-excel"></i> Excel
-            </a>
-        </div>
+        <button onclick="window.print()" class="print-btn">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
     </div>
 </div>
 @stop
@@ -688,7 +709,7 @@
 
     <!-- AÇÕES RÁPIDAS -->
     <div class="col-lg-4">
-        <div class="card card-success">
+        <div class="card card-success no-print">
             <div class="card-header">
                 <h3 class="card-title m-0">
                     <i class="fas fa-bolt mr-2"></i>
@@ -904,6 +925,28 @@ document.addEventListener('DOMContentLoaded', function() {
             card.style.opacity = '1';
             card.style.transform = 'translateY(0)';
         }, index * 100);
+    });
+
+    // Função para melhorar a impressão
+    window.addEventListener('beforeprint', function() {
+        // Adicionar título e data na impressão
+        const printHeader = document.createElement('div');
+        printHeader.innerHTML = `
+            <h2>Dashboard de Estoque - Relatório Impresso</h2>
+            <p>Data de impressão: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}</p>
+            <p>Período: ${document.querySelector('.subtitle strong').textContent}</p>
+            <hr>
+        `;
+        printHeader.style.cssText = 'text-align: center; margin-bottom: 20px;';
+        document.body.insertBefore(printHeader, document.body.firstChild);
+    });
+
+    window.addEventListener('afterprint', function() {
+        // Remover o cabeçalho de impressão após imprimir
+        const printHeader = document.querySelector('body > div:first-child');
+        if (printHeader && printHeader.querySelector('h2')) {
+            printHeader.remove();
+        }
     });
 });
 

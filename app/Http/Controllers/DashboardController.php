@@ -195,142 +195,52 @@ class DashboardController extends Controller
         return $todosMeses;
     }
 
-    public function export(Request $request, $format)
-    {
-        $periodo = $request->periodo ?? 'mes';
+   public function export(Request $request, $format)
+{
+    $periodo = $request->periodo ?? 'hoje';
 
-        // Definir datas baseadas no período selecionado
-        switch ($periodo) {
-            case 'hoje':
-                $inicio = Carbon::now()->startOfDay();
-                $fim = Carbon::now()->endOfDay();
-                break;
-            case 'semana':
-                $inicio = Carbon::now()->startOfWeek();
-                $fim = Carbon::now()->endOfWeek();
-                break;
-            case 'ano':
-                $inicio = Carbon::now()->startOfYear();
-                $fim = Carbon::now()->endOfYear();
-                break;
-            default: // 'mes'
-                $inicio = Carbon::now()->startOfMonth();
-                $fim = Carbon::now()->endOfMonth();
-                break;
-        }
+    // === REPLICA OS DADOS DO DASHBOARD ===
+    $totalEntrada = EntradaProduto::sum('quantidade');
 
-        // Coletar dados para exportação
-        $totalProdutos = Produto::count();
-        $totalValorEstoque = Produto::sum(DB::raw('preco * estoque_atual'));
-        $totalQuantidadeEstoque = Produto::sum('estoque_atual');
-        $produtosBaixa = Produto::whereColumn('estoque_atual', '<=', 'estoque_minimo')->get();
+    $valorEntrada = EntradaProduto::join('produtos', 'produtos.id', '=', 'entrada_produtos.produto_id')
+        ->select(DB::raw('SUM(entrada_produtos.quantidade * produtos.preco) as total'))
+        ->value('total');
 
-        // Entradas
-        $totalEntrada = EntradaProduto::whereBetween('created_at', [$inicio, $fim])->sum('quantidade');
-        $valorEntrada = EntradaProduto::whereBetween('entrada_produtos.created_at', [$inicio, $fim])
-            ->join('produtos', 'produtos.id', '=', 'entrada_produtos.produto_id')
-            ->sum(DB::raw('produtos.preco * entrada_produtos.quantidade'));
+    $totalSaida = Saidaitem::sum('quantidade');
 
-        // Saídas
-        $totalSaida = Saidaitem::whereBetween('created_at', [$inicio, $fim])->sum('quantidade');
-        $valorSaida = Saidaitem::whereBetween('saida_items.created_at', [$inicio, $fim])
-            ->join('produtos', 'produtos.id', '=', 'saida_items.produto_id')
-            ->sum(DB::raw('produtos.preco * saida_items.quantidade'));
+    $valorSaida = Saidaitem::join('produtos', 'produtos.id', '=', 'saida_items.produto_id')
+        ->select(DB::raw('SUM(saida_items.quantidade * produtos.preco) as total'))
+        ->value('total');
 
-        // Transferências
-        $totalTransferencias = TransferenciaItem::whereBetween('created_at', [$inicio, $fim])->sum('quantidade');
-        $valorTransferencias = TransferenciaItem::whereBetween('transferencia_items.created_at', [$inicio, $fim])
-            ->join('produtos', 'produtos.id', '=', 'transferencia_items.produto_id')
-            ->sum(DB::raw('produtos.preco * transferencia_items.quantidade'));
+    $produtosBaixoEstoque = Produto::where('quantidade', '<=', 5)->get();
 
-        // Movimentações recentes (do período)
-        $ultimasMovimentacoes = collect([]);
+    $dadosExport = [
+        'totalEntrada' => $totalEntrada,
+        'valorEntrada' => $valorEntrada,
+        'totalSaida'   => $totalSaida,
+        'valorSaida'   => $valorSaida,
+        'baixoEstoque' => $produtosBaixoEstoque,
+        'periodo'      => $periodo,
+        'data'         => now()->format('d/m/Y H:i'),
+    ];
 
-        $entradas = EntradaProduto::with('produto')
-            ->whereBetween('created_at', [$inicio, $fim])
-            ->select('created_at', 'quantidade', 'produto_id')
-            ->orderBy('created_at', 'desc')
-            ->take(10)
-            ->get()
-            ->map(fn($m) => [
-                'tipo' => 'ENTRADA',
-                'produto' => $m->produto->nome,
-                'quantidade' => $m->quantidade,
-                'data' => $m->created_at,
-                'codigo' => $m->produto->codigo ?? $m->produto->id,
-            ]);
+    // === PDF ===
+    if ($format === 'pdf') {
+        $pdf = \PDF::loadView('dashboard_export_pdf', $dadosExport)
+            ->setPaper('a4', 'portrait');
 
-        $saidas = Saidaitem::with('produto')
-            ->whereBetween('created_at', [$inicio, $fim])
-            ->select('created_at', 'quantidade', 'produto_id')
-            ->orderBy('created_at', 'desc')
-            ->take(10)
-            ->get()
-            ->map(fn($m) => [
-                'tipo' => 'SAIDA',
-                'produto' => $m->produto->nome,
-                'quantidade' => $m->quantidade,
-                'data' => $m->created_at,
-                'codigo' => $m->produto->codigo ?? $m->produto->id,
-            ]);
-
-        $transferencias = TransferenciaItem::with('produto')
-            ->whereBetween('created_at', [$inicio, $fim])
-            ->select('created_at', 'quantidade', 'produto_id')
-            ->orderBy('created_at', 'desc')
-            ->take(10)
-            ->get()
-            ->map(fn($m) => [
-                'tipo' => 'TRANSFERENCIA',
-                'produto' => $m->produto->nome,
-                'quantidade' => $m->quantidade,
-                'data' => $m->created_at,
-                'codigo' => $m->produto->codigo ?? $m->produto->id,
-            ]);
-
-        $ultimasMovimentacoes = $entradas->merge($saidas)
-            ->merge($transferencias)
-            ->sortByDesc('data')
-            ->take(10)
-            ->values();
-
-        $dadosExport = [
-            'periodo' => $periodo,
-            'totalProdutos' => $totalProdutos,
-            'totalValorEstoque' => $totalValorEstoque,
-            'totalQuantidadeEstoque' => $totalQuantidadeEstoque,
-            'totalEntrada' => $totalEntrada,
-            'valorEntrada' => $valorEntrada,
-            'totalSaida' => $totalSaida,
-            'valorSaida' => $valorSaida,
-            'totalTransferencias' => $totalTransferencias,
-            'valorTransferencias' => $valorTransferencias,
-            'produtosBaixa' => $produtosBaixa,
-            'ultimasMovimentacoes' => $ultimasMovimentacoes,
-        ];
-
-        // === PDF ===
-        if ($format === 'pdf') {
-            // Certifique-se de que o DomPDF está instalado: composer require barryvdh/laravel-dompdf
-            $pdf = \PDF::loadView('dashboard', $dadosExport);
-            
-            // Configurar opções do PDF
-            $pdf->setPaper('A4', 'portrait');
-            $pdf->setOptions([
-                'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled' => true,
-                'defaultFont' => 'sans-serif'
-            ]);
-            
-            return $pdf->download('dashboard-estoque-'.$periodo.'-'.date('Y-m-d').'.pdf');
-        }
-
-        // === EXCEL ===
-        if ($format === 'xlsx') {
-            // Certifique-se de que o Laravel Excel está instalado: composer require maatwebsite/excel
-            return \Excel::download(new DashboardExport($dadosExport), 'dashboard-estoque-'.$periodo.'-'.date('Y-m-d').'.xlsx');
-        }
-
-        abort(404, 'Formato de exportação não suportado');
+        return $pdf->download('dashboard-estoque-'.$periodo.'-'.date('Y-m-d').'.pdf');
     }
+
+    // === EXCEL ===
+    if ($format === 'xlsx') {
+        return \Excel::download(
+            new DashboardExport($dadosExport),
+            'dashboard-estoque-'.$periodo.'-'.date('Y-m-d').'.xlsx'
+        );
+    }
+
+    abort(404, 'Formato não suportado.');
+}
+
 }

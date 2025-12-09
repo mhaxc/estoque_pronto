@@ -139,7 +139,7 @@
                                 data-nome="{{ $p->nome }}"
                                 data-estoque="{{ $p->estoque_atual }}"
                                 data-preco="{{ $p->preco }}">
-                                {{ $p->nome }} — Estoque: {{ $p->estoque_atual }} — R$ {{ number_format($p->preco, 2, ',', '.') }}
+                                {{ $p->nome }} — Estoque: {{ number_format($p->estoque_atual, 3, ',', '.') }} — R$ {{ number_format($p->preco, 2, ',', '.') }}
                             </option>
                         @endforeach
                     </select>
@@ -147,14 +147,15 @@
 
                 <div class="form-group">
                     <label for="quantidade" class="font-weight-bold">Quantidade *</label>
-                    <input type="number" step="1" min="1" id="quantidade" class="form-control" placeholder="Informe a quantidade">
+                    <input type="number" step="0.001" min="0.001" id="quantidade" class="form-control" 
+                           placeholder="Informe a quantidade (ex: 0.5, 1.25)">
                 </div>
 
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
                             <label>Estoque Disponível</label>
-                            <input type="text" id="estoque-disponivel" class="form-control" readonly value="0">
+                            <input type="text" id="estoque-disponivel" class="form-control" readonly value="0,000">
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -208,13 +209,20 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById("produto_id").addEventListener("change", function() {
         const option = this.options[this.selectedIndex];
         if (option && option.value !== "") {
-            document.getElementById("estoque-disponivel").value = option.dataset.estoque;
+            document.getElementById("estoque-disponivel").value = 
+                parseFloat(option.dataset.estoque).toLocaleString('pt-BR', {
+                    minimumFractionDigits: 3,
+                    maximumFractionDigits: 3
+                });
             document.getElementById("preco-unitario").value = 'R$ ' + 
-                parseFloat(option.dataset.preco).toFixed(2).replace('.', ',');
+                parseFloat(option.dataset.preco).toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
             document.getElementById("quantidade").value = '';
             document.getElementById("alerta-estoque").style.display = 'none';
         } else {
-            document.getElementById("estoque-disponivel").value = '0';
+            document.getElementById("estoque-disponivel").value = '0,000';
             document.getElementById("preco-unitario").value = 'R$ 0,00';
         }
     });
@@ -264,14 +272,14 @@ function validarEstoque() {
         return false;
     }
 
-    const quantidade = parseInt(quantidadeInput.value);
-    const estoque = parseInt(produtoSelect.options[produtoSelect.selectedIndex].dataset.estoque);
+    const quantidade = parseFloat(quantidadeInput.value.replace(',', '.'));
+    const estoque = parseFloat(produtoSelect.options[produtoSelect.selectedIndex].dataset.estoque);
     const produtoId = produtoSelect.value;
 
     // Verificar se produto já foi adicionado
     const produtoJaAdicionado = produtosAdicionados.find(p => p.id === produtoId);
     const quantidadeTotal = produtoJaAdicionado ? 
-        (produtoJaAdicionado.quantidade + quantidade) : quantidade;
+        (parseFloat(produtoJaAdicionado.quantidade) + quantidade) : quantidade;
 
     if (quantidade <= 0 || isNaN(quantidade)) {
         alerta.style.display = 'block';
@@ -281,13 +289,13 @@ function validarEstoque() {
 
     if (quantidade > estoque) {
         alerta.style.display = 'block';
-        mensagem.textContent = `Quantidade solicitada (${quantidade}) maior que estoque disponível (${estoque})`;
+        mensagem.textContent = `Quantidade solicitada (${quantidade.toFixed(3).replace('.', ',')}) maior que estoque disponível (${estoque.toFixed(3).replace('.', ',')})`;
         return false;
     }
 
     if (quantidadeTotal > estoque) {
         alerta.style.display = 'block';
-        mensagem.textContent = `Quantidade total para este produto (${quantidadeTotal}) excede o estoque disponível (${estoque})`;
+        mensagem.textContent = `Quantidade total para este produto (${quantidadeTotal.toFixed(3).replace('.', ',')}) excede o estoque disponível (${estoque.toFixed(3).replace('.', ',')})`;
         return false;
     }
 
@@ -305,7 +313,7 @@ function adicionarProdutoLista() {
         return;
     }
 
-    if (!quantidadeInput.value || parseInt(quantidadeInput.value) <= 0) {
+    if (!quantidadeInput.value || parseFloat(quantidadeInput.value.replace(',', '.')) <= 0) {
         alert("Informe uma quantidade válida");
         quantidadeInput.focus();
         return;
@@ -321,7 +329,7 @@ function adicionarProdutoLista() {
         nome: option.dataset.nome,
         estoque: option.dataset.estoque,
         preco: option.dataset.preco,
-        quantidade: parseInt(quantidadeInput.value)
+        quantidade: parseFloat(quantidadeInput.value.replace(',', '.'))
     };
 
     // Verificar se produto já existe na lista
@@ -343,7 +351,6 @@ function adicionarProdutoLista() {
 
 function adicionarLinhaTabela(produto) {
     const tbody = document.getElementById("produtos-tbody");
-    const index = produtosAdicionados.findIndex(p => p.id === produto.id);
     const totalItem = produto.preco * produto.quantidade;
 
     const html = `
@@ -353,14 +360,23 @@ function adicionarLinhaTabela(produto) {
                 <input type="hidden" name="produtos[${linha}][produto_id]" value="${produto.id}">
                 <input type="hidden" name="produtos[${linha}][quantidade]" value="${produto.quantidade}">
             </td>
-            <td class="text-center">${produto.estoque}</td>
+            <td class="text-center">${parseFloat(produto.estoque).toLocaleString('pt-BR', {
+                minimumFractionDigits: 3,
+                maximumFractionDigits: 3
+            })}</td>
             <td class="text-center">
                 <span class="badge badge-primary badge-pill" style="font-size: 1em;">
-                    ${produto.quantidade}
+                    ${produto.quantidade.toLocaleString('pt-BR', {
+                        minimumFractionDigits: 3,
+                        maximumFractionDigits: 3
+                    })}
                 </span>
             </td>
             <td class="text-right">
-                R$ ${parseFloat(produto.preco).toFixed(2).replace('.', ',')}
+                R$ ${parseFloat(produto.preco).toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                })}
             </td>
             <td class="text-center">
                 <button type="button" class="btn btn-danger btn-sm btn-remover" 
@@ -381,7 +397,10 @@ function adicionarLinhaTabela(produto) {
 function atualizarLinhaTabela(produto) {
     const linha = document.querySelector(`tr[data-produto-id="${produto.id}"]`);
     if (linha) {
-        linha.querySelector('.badge').textContent = produto.quantidade;
+        linha.querySelector('.badge').textContent = produto.quantidade.toLocaleString('pt-BR', {
+            minimumFractionDigits: 3,
+            maximumFractionDigits: 3
+        });
         linha.querySelector('input[name*="quantidade"]').value = produto.quantidade;
     }
 }
@@ -394,7 +413,10 @@ function atualizarTotalGeral() {
     });
 
     document.getElementById("total-geral").textContent = 
-        'R$ ' + totalGeral.toFixed(2).replace('.', ',');
+        'R$ ' + totalGeral.toLocaleString('pt-BR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
 
     // Habilitar/desabilitar botão de finalizar
     document.getElementById("btn-finalizar").disabled = produtosAdicionados.length === 0;
@@ -403,7 +425,7 @@ function atualizarTotalGeral() {
 function limparModal() {
     document.getElementById("produto_id").value = "";
     document.getElementById("quantidade").value = "";
-    document.getElementById("estoque-disponivel").value = "0";
+    document.getElementById("estoque-disponivel").value = "0,000";
     document.getElementById("preco-unitario").value = "R$ 0,00";
     document.getElementById("alerta-estoque").style.display = "none";
 }
